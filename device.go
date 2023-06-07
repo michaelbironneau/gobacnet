@@ -33,14 +33,13 @@ package gobacnet
 
 import (
 	"fmt"
+	"log"
 	"net"
-	"os"
 	"time"
 
-	"github.com/alexbeltran/gobacnet/tsm"
-	bactype "github.com/alexbeltran/gobacnet/types"
-	"github.com/alexbeltran/gobacnet/utsm"
-	"github.com/sirupsen/logrus"
+	"github.com/michaelbironneau/gobacnet/tsm"
+	bactype "github.com/michaelbironneau/gobacnet/types"
+	"github.com/michaelbironneau/gobacnet/utsm"
 )
 
 const defaultStateSize = 20
@@ -49,11 +48,12 @@ type Client struct {
 	netInterface     *net.Interface
 	myAddress        string
 	broadcastAddress net.IP
-	port             int
+	bacnetPort       int
+	clientPort       int
 	tsm              *tsm.TSM
 	utsm             *utsm.Manager
 	listener         *net.UDPConn
-	log              *logrus.Logger
+	log              *log.Logger
 }
 
 // getBroadcast uses the given address with subnet to return the broadcast address
@@ -70,18 +70,23 @@ func getBroadcast(addr string) (net.IP, error) {
 }
 
 // NewClient creates a new client with the given interface and
-// port.
-func NewClient(inter string, port int) (*Client, error) {
+// clientPort.
+func NewClient(inter string, clientPort, bacnetPort int) (*Client, error) {
 	c := &Client{}
 	i, err := net.InterfaceByName(inter)
 	if err != nil {
 		return c, err
 	}
 	c.netInterface = i
-	if port == 0 {
-		c.port = DefaultPort
+	if clientPort == 0 {
+		c.clientPort = DefaultPort
 	} else {
-		c.port = port
+		c.clientPort = clientPort
+	}
+	if bacnetPort == 0 {
+		c.bacnetPort = DefaultPort
+	} else {
+		c.bacnetPort = bacnetPort
 	}
 	uni, err := i.Addrs()
 	if err != nil {
@@ -90,6 +95,10 @@ func NewClient(inter string, port int) (*Client, error) {
 
 	if len(uni) == 0 {
 		return c, fmt.Errorf("interface %s has no addresses", inter)
+	}
+
+	if len(uni) > 1 {
+		log.Printf("interface %s has %d addresses", inter, len(uni))
 	}
 
 	// Clear out the value
@@ -121,28 +130,14 @@ func NewClient(inter string, port int) (*Client, error) {
 		utsm.DefaultSubscriberLastReceivedTimeout(time.Second * time.Duration(2)),
 	}
 	c.utsm = utsm.NewManager(options...)
-	udp, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf(":%d", c.port))
+	udp, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf(":%d", c.clientPort))
 	conn, err := net.ListenUDP("udp", udp)
 	if err != nil {
 		return nil, err
 	}
 
 	c.listener = conn
-	c.log = logrus.New()
-	c.log.Formatter = &logrus.TextFormatter{}
-	c.log.SetLevel(logrus.DebugLevel)
-
-	// open a debug file
-	f, err := os.Create("gobacnet.log")
-	if err != nil {
-		return c, fmt.Errorf("Could not create a log file")
-	}
-	c.log.Out = f
-
-	// Print out relevant information
-	c.log.Debug(fmt.Sprintf("Broadcast Address: %v", c.broadcastAddress))
-	c.log.Debug(fmt.Sprintf("Local Address: %s", c.myAddress))
-	c.log.Debug(fmt.Sprintf("Port: %x", c.port))
+	c.log = log.Default()
 	go c.listen()
 	return c, nil
 }
@@ -152,7 +147,7 @@ func (c *Client) localAddress() (la bactype.Address, err error) {
 	ad := ip.To4()
 	udp := net.UDPAddr{
 		IP:   ad,
-		Port: c.port,
+		Port: c.clientPort,
 	}
 	la = bactype.UDPToAddress(&udp)
 	return la, nil
@@ -160,6 +155,6 @@ func (c *Client) localAddress() (la bactype.Address, err error) {
 
 func (c *Client) localUDPAddress() (*net.UDPAddr, error) {
 	ip, _, _ := net.ParseCIDR(c.myAddress)
-	netstr := fmt.Sprintf("%s:%d", ip.String(), c.port)
+	netstr := fmt.Sprintf("%s:%d", ip.String(), c.clientPort)
 	return net.ResolveUDPAddr("udp4", netstr)
 }

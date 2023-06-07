@@ -35,8 +35,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/alexbeltran/gobacnet/encoding"
-	bactype "github.com/alexbeltran/gobacnet/types"
+	"github.com/michaelbironneau/gobacnet/encoding"
+	bactype "github.com/michaelbironneau/gobacnet/types"
 )
 
 // address returns the address given
@@ -44,7 +44,7 @@ func (c *Client) address(addr bactype.Address) (net.UDPAddr, error) {
 	if addr.IsBroadcast() {
 		return net.UDPAddr{
 			IP:   c.broadcastAddress,
-			Port: c.port,
+			Port: c.clientPort,
 		}, nil
 	} else if addr.IsSubBroadcast() {
 		// Network specific
@@ -55,7 +55,7 @@ func (c *Client) address(addr bactype.Address) (net.UDPAddr, error) {
 		// Broadcast
 		return net.UDPAddr{
 			IP:   c.broadcastAddress,
-			Port: c.port,
+			Port: c.clientPort,
 		}, nil
 	} else if addr.IsUnicast() {
 		return addr.UDPAddr()

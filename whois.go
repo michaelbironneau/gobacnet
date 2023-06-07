@@ -34,8 +34,8 @@ package gobacnet
 import (
 	"net"
 
-	"github.com/alexbeltran/gobacnet/encoding"
-	"github.com/alexbeltran/gobacnet/types"
+	"github.com/michaelbironneau/gobacnet/encoding"
+	"github.com/michaelbironneau/gobacnet/types"
 )
 
 // WhoIs finds all devices with ids between the provided low and high values.
@@ -45,7 +45,7 @@ import (
 func (c *Client) WhoIs(low, high int) ([]types.Device, error) {
 	dest := types.UDPToAddress(&net.UDPAddr{
 		IP:   c.broadcastAddress,
-		Port: DefaultPort,
+		Port: c.bacnetPort,
 	})
 	src, _ := c.localAddress()
 

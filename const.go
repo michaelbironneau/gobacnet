@@ -31,7 +31,7 @@ License.
 
 package gobacnet
 
-// DefaultPort that BacnetIP will use if a port is not given. Valid ports for
+// DefaultPort that BacnetIP will use if a clientPort is not given. Valid ports for
 // the bacnet protocol is between 0xBAC0 and 0xBAC9
 const DefaultPort = 0xBAC0
 const defaultAPDUTimeout = 60000

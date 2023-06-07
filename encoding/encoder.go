@@ -35,7 +35,7 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	bactype "github.com/alexbeltran/gobacnet/types"
+	bactype "github.com/michaelbironneau/gobacnet/types"
 )
 
 var EncodingEndian binary.ByteOrder = binary.BigEndian
@@ -147,8 +147,11 @@ func (e *Encoder) tag(tg tagInfo) {
 	}
 }
 
-/* from clause 20.2.14 Encoding of an Object Identifier Value
-returns the number of apdu bytes consumed */
+/*
+	from clause 20.2.14 Encoding of an Object Identifier Value
+
+returns the number of apdu bytes consumed
+*/
 func (e *Encoder) objectId(objectType bactype.ObjectType, instance bactype.ObjectInstance) {
 	var value uint32
 	value = ((uint32(objectType) & MaxObject) << InstanceBits) | (uint32(instance) & MaxInstance)

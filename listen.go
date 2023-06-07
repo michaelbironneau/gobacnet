@@ -33,11 +33,9 @@ package gobacnet
 
 import (
 	"fmt"
+	"github.com/michaelbironneau/gobacnet/encoding"
+	bactype "github.com/michaelbironneau/gobacnet/types"
 	"net"
-	"os"
-
-	"github.com/alexbeltran/gobacnet/encoding"
-	bactype "github.com/alexbeltran/gobacnet/types"
 )
 
 // Close free resources for the client. Always call this function when using NewClient
@@ -46,9 +44,6 @@ func (c *Client) Close() {
 		return
 	}
 	c.listener.Close()
-	if f, ok := c.log.Out.(*os.File); ok {
-		f.Close()
-	}
 }
 
 func (c *Client) handleMsg(src *net.UDPAddr, b []byte) {
@@ -59,7 +54,7 @@ func (c *Client) handleMsg(src *net.UDPAddr, b []byte) {
 	dec := encoding.NewDecoder(b)
 	err := dec.BVLC(&header)
 	if err != nil {
-		c.log.Error(err)
+		c.log.Println(err)
 		return
 	}
 
@@ -72,7 +67,7 @@ func (c *Client) handleMsg(src *net.UDPAddr, b []byte) {
 		}
 
 		if npdu.IsNetworkLayerMessage {
-			c.log.Debug("Ignored Network Layer Message")
+			c.log.Println("Ignored Network Layer Message")
 			return
 		}
 
@@ -86,7 +81,7 @@ func (c *Client) handleMsg(src *net.UDPAddr, b []byte) {
 		switch apdu.DataType {
 		case bactype.UnconfirmedServiceRequest:
 			if apdu.UnconfirmedService == bactype.ServiceUnconfirmedIAm {
-				c.log.Debug("Received IAm Message")
+				c.log.Println("Received IAm Message")
 				dec = encoding.NewDecoder(apdu.RawData)
 				var iam bactype.IAm
 
@@ -97,7 +92,7 @@ func (c *Client) handleMsg(src *net.UDPAddr, b []byte) {
 				src.IP = src.IP.To4()
 				iam.Addr = bactype.UDPToAddress(src)
 				if err != nil {
-					c.log.Error(err)
+					c.log.Println(err)
 					return
 				}
 				c.utsm.Publish(int(iam.ID.Instance), iam)
@@ -108,16 +103,16 @@ func (c *Client) handleMsg(src *net.UDPAddr, b []byte) {
 				// For now we are going to ignore who is request.
 				//log.WithFields(log.Fields{"low": low, "high": high}).Debug("WHO IS Request")
 			} else {
-				c.log.Errorf("Unconfirmed: %d %v", apdu.UnconfirmedService, apdu.RawData)
+				c.log.Println("Unconfirmed: %d %v", apdu.UnconfirmedService, apdu.RawData)
 			}
 		case bactype.ComplexAck:
-			c.log.Debug("Received Complex Ack")
+			c.log.Println("Received Complex Ack")
 			err := c.tsm.Send(int(apdu.InvokeId), send)
 			if err != nil {
 				return
 			}
 		case bactype.ConfirmedServiceRequest:
-			c.log.Debug("Received  Confirmed Service Request")
+			c.log.Println("Received  Confirmed Service Request")
 			err := c.tsm.Send(int(apdu.InvokeId), send)
 			if err != nil {
 				return
@@ -126,7 +121,7 @@ func (c *Client) handleMsg(src *net.UDPAddr, b []byte) {
 			err := fmt.Errorf("Error Class %d Code %d", apdu.Error.Class, apdu.Error.Code)
 			err = c.tsm.Send(int(apdu.InvokeId), err)
 			if err != nil {
-				c.log.Debug("unable to send error to %d: %v", apdu.InvokeId, err)
+				c.log.Println("unable to send error to %d: %v", apdu.InvokeId, err)
 			}
 		default:
 			// Ignore it
@@ -139,7 +134,7 @@ func (c *Client) handleMsg(src *net.UDPAddr, b []byte) {
 		// we will need to check it for any additional information we can gleam.
 		// NDPU has source
 		b = b[forwardHeaderLength:]
-		c.log.Debug("Ignored NDPU Forwarded")
+		c.log.Println("Ignored NDPU Forwarded")
 	}
 
 }
@@ -158,7 +153,7 @@ func (c *Client) listen() error {
 		b := make([]byte, 2048)
 		i, adr, err = c.listener.ReadFromUDP(b)
 		if err != nil {
-			c.log.Error(err)
+			c.log.Println(err)
 			continue
 		}
 		go c.handleMsg(adr, b[:i])

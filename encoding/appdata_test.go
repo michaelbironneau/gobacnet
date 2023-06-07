@@ -1,4 +1,5 @@
-/*Copyright (C) 2017 Alex Beltran
+/*
+Copyright (C) 2017 Alex Beltran
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -34,7 +35,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/alexbeltran/gobacnet/types"
+	"github.com/michaelbironneau/gobacnet/types"
 )
 
 func subTestSimpleData(t *testing.T, d *Decoder, x interface{}) func(t *testing.T) {
