@@ -124,7 +124,7 @@ func (c *Client) sendReadMultipleProperty(id int, dev bactype.Device, request []
 	dec.APDU(&apdu)
 	err = dec.ReadMultiplePropertyAck(&out)
 	if err != nil {
-		c.log.Debugf("WEIRD PACKET: %v: %v", err, b)
+		c.log.Printf("WEIRD PACKET: %v: %v", err, b)
 		return out, err
 	}
 	return out, err
